@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Shield -->
+  <path d="M50 5 L88 20 L88 50 C88 72 70 88 50 96 C30 88 12 72 12 50 L12 20 Z"
+    fill="none" stroke="#38BDF8" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M50 12 L82 25 L82 50 C82 69 66 83 50 91 C34 83 18 69 18 50 L18 25 Z"
+    fill="rgba(56,189,248,0.08)"/>
+  <!-- Eye -->
+  <ellipse cx="50" cy="50" rx="20" ry="14" fill="none" stroke="#60A5FA" stroke-width="2"/>
+  <circle cx="50" cy="50" r="7" fill="none" stroke="#38BDF8" stroke-width="2"/>
+  <circle cx="50" cy="50" r="3.5" fill="#38BDF8"/>
+  <!-- Checkmark -->
+  <path d="M39 67 L47 75 L63 57" stroke="#22C55E" stroke-width="4"
+    stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>
