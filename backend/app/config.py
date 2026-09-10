@@ -28,7 +28,15 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins = []
+        for origin in self.CORS_ORIGINS.split(","):
+            cleaned = origin.strip().rstrip("/")
+            if cleaned and cleaned != "*":
+                origins.append(cleaned)
+            elif cleaned == "*":
+                # Wildcard with credentials is prohibited by CORS spec
+                origins.append("*")
+        return origins if origins else ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     model_config = SettingsConfigDict(
         env_file=".env",

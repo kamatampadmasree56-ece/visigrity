@@ -32,6 +32,7 @@ pnpm-debug.log*
 *.sqlite3
 visigrity.db
 test_visigrity.db
+*.pdf
 
 # Environment variables
 .env

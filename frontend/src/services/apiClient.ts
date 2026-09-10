@@ -1,4 +1,16 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (!envUrl || !envUrl.trim()) {
+    return 'http://localhost:8000/api';
+  }
+  let sanitized = envUrl.trim().replace(/\/+$/, '');
+  if (!sanitized.endsWith('/api')) {
+    sanitized = `${sanitized}/api`;
+  }
+  return sanitized;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiClient {
   private getHeaders(isFormData = false): HeadersInit {

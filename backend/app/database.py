@@ -7,8 +7,19 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Determine engine parameters based on database type
-database_url = settings.DATABASE_URL
+def get_database_url() -> str:
+    url = settings.DATABASE_URL
+    # Normalize postgres:// to postgresql:// (for Neon/Supabase/Render/Heroku DB URLs)
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    
+    # On serverless (Vercel Lambda) the current directory is read-only.
+    # If SQLite relative path is used in a serverless environment, store in /tmp.
+    if url.startswith("sqlite:///./") and os.path.exists("/tmp") and os.access("/tmp", os.W_OK):
+        url = "sqlite:////tmp/visigrity.db"
+    return url
+
+database_url = get_database_url()
 
 connect_args = {}
 if database_url.startswith("sqlite"):
@@ -18,15 +29,18 @@ try:
     engine = create_engine(
         database_url,
         connect_args=connect_args,
+        pool_pre_ping=True,
         echo=False,
         future=True,
     )
 except Exception as e:
     logger.warning(f"Failed to initialize primary database at {database_url}: {e}. Falling back to SQLite.")
-    database_url = "sqlite:///./visigrity.db"
+    fallback_url = "sqlite:////tmp/visigrity.db" if (os.path.exists("/tmp") and os.access("/tmp", os.W_OK)) else "sqlite:///./visigrity.db"
+    database_url = fallback_url
     engine = create_engine(
-        database_url,
+        fallback_url,
         connect_args={"check_same_thread": False},
+        pool_pre_ping=True,
         echo=False,
         future=True,
     )
