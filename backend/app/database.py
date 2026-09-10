@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from app.config import settings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("visigrity.database")
 
 def get_database_url() -> str:
     url = settings.DATABASE_URL
@@ -13,9 +13,13 @@ def get_database_url() -> str:
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
     
-    # On serverless (Vercel Lambda) the current directory is read-only.
-    # If SQLite relative path is used in a serverless environment, store in /tmp.
-    if url.startswith("sqlite:///./") and os.path.exists("/tmp") and os.access("/tmp", os.W_OK):
+    # Normalize postgresql+psycopg:// to postgresql:// if psycopg2 is used
+    if url.startswith("postgresql+psycopg://"):
+        url = url.replace("postgresql+psycopg://", "postgresql://", 1)
+    
+    # On serverless (Vercel Lambda) the current working directory /var/task is read-only.
+    # If SQLite relative path is used, automatically store in writable /tmp.
+    if ("sqlite" in url and ("./" in url or not url.startswith("sqlite:////"))) and os.path.exists("/tmp") and os.access("/tmp", os.W_OK):
         url = "sqlite:////tmp/visigrity.db"
     return url
 

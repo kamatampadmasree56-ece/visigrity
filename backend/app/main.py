@@ -270,16 +270,31 @@ def seed_database(db: Session = None):
         if should_close:
             db.close()
 
+_db_ready = False
+
+def ensure_database_ready():
+    """Ensure database tables exist and initial demo records are seeded (serverless safe)."""
+    global _db_ready
+    if not _db_ready:
+        try:
+            Base.metadata.create_all(bind=engine)
+            seed_database()
+            _db_ready = True
+        except Exception as e:
+            logger.error(f"Database auto-initialization warning: {e}")
+
+# Trigger DB ready check at module load
+ensure_database_ready()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize database tables
-    Base.metadata.create_all(bind=engine)
-    seed_database()
+    # Initialize database tables and seeds if not already done
+    ensure_database_ready()
     yield
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Trustworthy Computer Vision Integrity & Provenance Platform Backend (Phase 2)",
+    description="Trustworthy Computer Vision Integrity & Provenance Platform Backend",
     version=settings.VERSION,
     lifespan=lifespan,
     docs_url="/docs",
@@ -294,6 +309,33 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serverless database readiness middleware
+@app.middleware("http")
+async def ensure_db_middleware(request, call_next):
+    ensure_database_ready()
+    response = await call_next(request)
+    return response
+
+# Root endpoints (for Vercel root and browser visits)
+@app.get("/", tags=["Root"])
+def root():
+    return {
+        "service": settings.PROJECT_NAME,
+        "tagline": settings.TAGLINE,
+        "version": settings.VERSION,
+        "status": "online",
+        "docs_url": "/docs",
+        "health_url": "/api/health",
+        "api_prefix": settings.API_PREFIX,
+        "environment": settings.ENVIRONMENT,
+        "blockchain_mode": settings.BLOCKCHAIN_MODE,
+        "cv_engine_mode": settings.CV_ENGINE_MODE,
+    }
+
+@app.get("/api", tags=["Root"])
+def api_root():
+    return root()
 
 # Health Check Endpoint
 @app.get("/api/health", tags=["Health"])
@@ -317,3 +359,4 @@ app.include_router(audit_router, prefix=settings.API_PREFIX)
 app.include_router(contributors_router, prefix=settings.API_PREFIX)
 app.include_router(reports_router, prefix=settings.API_PREFIX)
 app.include_router(security_router, prefix=settings.API_PREFIX)
+
